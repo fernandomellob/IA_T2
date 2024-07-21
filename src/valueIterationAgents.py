@@ -26,35 +26,34 @@ class ValueIterationAgent(ValueEstimationAgent):
     """
     def __init__(self, mdp, discount=0.9, iterations=100):
         """
-          Your value iteration agent should take an mdp on
-          construction, run the indicated number of iterations
-          and then act according to the resulting policy.
-
-          Some useful mdp methods you will use:
-              mdp.getStates()
-              mdp.getPossibleActions(state)
-              mdp.getTransitionStatesAndProbs(state, action)
-              mdp.getReward(state, action, nextState)
-              mdp.isTerminal(state)
+        Inicializa o agente de iteração de valor e executa o algoritmo de iteração de valor.
         """
         self.mdp = mdp
         self.discount = discount
         self.iterations = iterations
-        self.values = util.Counter()  # A Counter is a dict with default 0
+        self.values = util.Counter()  # Inicializa os valores como um Counter (dict com valor padrão 0)
 
-        # Write value iteration code here
+        # Executa o algoritmo de iteração de valor
         for i in range(self.iterations):
-            values_copy = self.values.copy()
+            # Cria uma cópia dos valores atuais para atualizá-los de forma síncrona
+            values_copy = util.Counter()
+            
             for state in self.mdp.getStates():
+                # Pula estados terminais, pois seus valores não mudam
                 if self.mdp.isTerminal(state):
                     continue
+                
+                # Calcula o melhor valor Q entre todas as ações possíveis
                 max_q_value = float('-inf')
                 for action in self.mdp.getPossibleActions(state):
-                    q_value = self.getQValue(state, action)
+                    q_value = self.computeQValueFromValues(state, action)
                     max_q_value = max(max_q_value, q_value)
-                values_copy[state] = max_q_value
+                
+                if max_q_value != float('-inf'):
+                    values_copy[state] = max_q_value
+            
+            # Atualiza os valores com a cópia após processar todos os estados
             self.values = values_copy
-
 
     def getValue(self, state):
         """

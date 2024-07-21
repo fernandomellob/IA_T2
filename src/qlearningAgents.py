@@ -46,40 +46,47 @@ class QLearningAgent(ReinforcementAgent):
 
     def getQValue(self, state, action):
         """
-          Returns Q(state,action)
-          Should return 0.0 if we have never seen a state
-          or the Q node value otherwise
+        Retorna o valor Q(state,action).
+        Retorna 0.0 se nunca vimos este par estado-ação antes.
         """
-        return self.qValues[(state, action)]
-
+        # Usa o método get() do dicionário com valor padrão 0.0
+        return self.qValues.get((state, action), 0.0)
 
     def computeValueFromQValues(self, state):
         """
-          Returns max_action Q(state,action)
-          where the max is over legal actions.  Note that if
-          there are no legal actions, which is the case at the
-          terminal state, you should return a value of 0.0.
+        Retorna o valor máximo de Q(state,action) para todas as ações legais.
+        Se não houver ações legais, retorna 0.0 (estado terminal).
         """
         legalActions = self.getLegalActions(state)
         if not legalActions:
             return 0.0
 
+        # Usa getQValue para acessar os valores Q
         return max(self.getQValue(state, action) for action in legalActions)
 
     def computeActionFromQValues(self, state):
         """
-          Compute the best action to take in a state.  Note that if there
-          are no legal actions, which is the case at the terminal state,
-          you should return None.
+        Computa a melhor ação a ser tomada em um estado.
+        Retorna None se não houver ações legais (estado terminal).
+        Quebra empates aleatoriamente.
         """
         legalActions = self.getLegalActions(state)
         if not legalActions:
             return None
 
-        bestValue = self.computeValueFromQValues(state)
-        bestActions = [action for action in legalActions if self.getQValue(state, action) == bestValue]
+        # Usa um dicionário para agrupar ações por valor Q
+        actionValues = {}
+        for action in legalActions:
+            q_value = self.getQValue(state, action)
+            if q_value not in actionValues:
+                actionValues[q_value] = []
+            actionValues[q_value].append(action)
 
-        return random.choice(bestActions)
+        # Encontra o valor Q máximo
+        bestQValue = max(actionValues.keys())
+
+        # Retorna uma ação aleatória entre as melhores ações
+        return random.choice(actionValues[bestQValue])
 
     def getAction(self, state):
         """
@@ -186,19 +193,32 @@ class ApproximateQAgent(PacmanQAgent):
 
     def update(self, state, action, nextState, reward):
         """
-           Should update your weights based on transition
+        Atualiza os pesos do agente com base na transição observada.
+        
+        Parâmetros:
+        state -- O estado atual
+        action -- A ação tomada
+        nextState -- O próximo estado após a ação
+        reward -- A recompensa recebida pela transição
         """
-
+        
+        # Extrai as features do par estado-ação atual
         features = self.featExtractor.getFeatures(state, action)
-        q_value = self.getQValue(state, action)
-
-        # Gets the max q_value
-        next_q_value = self.computeValueFromQValues(nextState)
-
-        delta = reward + (self.discount * next_q_value) - q_value
-
+        
+        # Calcula o Q-valor atual para o par estado-ação
+        current_q_value = self.getQValue(state, action)
+        
+        # Calcula o valor máximo esperado do próximo estado
+        next_max_q_value = self.getValue(nextState)
+        
+        # Calcula o erro de diferença temporal (TD error)
+        # TD error = (recompensa + desconto * melhor próximo valor) - valor atual
+        td_error = reward + (self.discount * next_max_q_value) - current_q_value
+        
+        # Atualiza os pesos para cada feature
         for feature, value in features.items():
-            self.weights[feature] += self.alpha * delta * value
+            # Fórmula de atualização: peso += taxa_aprendizado * td_error * valor_feature
+            self.weights[feature] += self.alpha * td_error * value
 
     def final(self, state):
         "Called at the end of each game."
