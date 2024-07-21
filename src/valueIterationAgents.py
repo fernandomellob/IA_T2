@@ -68,7 +68,8 @@ class ValueIterationAgent(ValueEstimationAgent):
           value function stored in self.values.
         """
         q_value = 0
-        for next_state, prob in self.mdp.getTransitionStatesAndProbs(state, action):
+        transitions = self.mdp.getTransitionStatesAndProbs(state, action)
+        for next_state, prob in transitions:
             reward = self.mdp.getReward(state, action, next_state)
             q_value += prob * (reward + self.discount * self.values[next_state])
         return q_value
